@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>文字冒险游戏</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5dc;
+            color: #333;
+            line-height: 1.6;
+        }
+        #game-container {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        #story {
+            min-height: 150px;
+            margin-bottom: 25px;
+            font-size: 18px;
+            border-left: 4px solid #8e44ad;
+            padding-left: 15px;
+        }
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>森林冒险</h1>
+        <div class="stats">
+            <div>生命值: <span id="hp">100</span></div>
+            <div>金币: <span id="gold">0</span></div>
+        </div>
+        <div id="story">欢迎来到文字冒险世界！你在一片神秘的森林中醒来...</div>
+        <div class="button-container" id="choices"></div>
+    </div>
+ 
+    <script>
+        // 游戏状态数据 
+        const gameState = {
+            hp: 100,
+            gold: 0,
+            currentScene: 'start'
+        };
+ 
+        // 游戏场景配置 
+        const scenes = {
+            start: {
+                text: "你在一片神秘的森林中醒来，发现自己迷失了方向。阳光透过树叶洒在地面上，四周传来鸟鸣声。",
+                choices: [
+                    { text: "向左走", next: "leftPath", effect: { } },
+                    { text: "向右走", next: "rightPath", effect: { } }
+                ]
+            },
+            leftPath: {
+                text: "你选择向左走，发现了一条清澈的小溪。溪水旁有个闪闪发光的东西。",
+                choices: [
+                    { text: "检查发光物", next: "findGold", effect: { gold: 10 } },
+                    { text: "继续前进", next: "cave" }
+                ]
+            },
+            rightPath: {
+                text: "你向右前进，突然一只巨大的熊从树丛中跳出来！它看起来不太友好...",
+                choices: [
+                    { text: "尝试逃跑", next: "escapeBear" },
+                    { text: "装死", next: "playDead" }
+                ]
+            },
+            findGold: {
+                text: "你发现了一袋金币！获得10金币。溪水对岸有个山洞入口。",
+                choices: [
+                    { text: "进入山洞", next: "cave" },
+                    { text: "沿溪流行走", next: "river" }
+                ]
+            },
+            cave: {
+                text: "山洞里漆黑潮湿。突然，你踩到了一个松动的石头！",
+                choices: [
+                    { text: "快速跳开", next: "avoidTrap", effect: { hp: -10 } },
+                    { text: "保持不动", next: "fallTrap", effect: { hp: -30 } }
+                ]
+            },
+            escapeBear: {
+                text: "你拼命逃跑！熊紧追不舍，你的手臂被树枝划伤。",
+                choices: [
+                    { text: "爬树", next: "climbTree" },
+                    { text: "跳进河里", next: "jumpRiver" }
+                ]
+            },
+            // 更多场景可以继续扩展...
+            endWin: {
+                text: "恭喜！你成功逃离了森林，带着找到的宝物安全回家了！",
+                choices: [
+                    { text: "重新开始", next: "restart" }
+                ]
+            },
+            endLose: {
+                text: "很遗憾，你的冒险在此结束...",
+                choices: [
+                    { text: "重新开始", next: "restart" }
+                ]
+            }
+        };
+ 
+        // 更新游戏界面 
+        function updateGame() {
+            // 更新状态显示 
+            document.getElementById('hp').textContent = gameState.hp;
+            document.getElementById('gold').textContent = gameState.gold;
+            
+            const scene = scenes[gameState.currentScene];
+            document.getElementById('story').textContent = scene.text;
+            
+            // 清空选择按钮
+            const choicesContainer = document.getElementById('choices');
+            choicesContainer.innerHTML = '';
+            
+            // 添加新选择按钮 
+            scene.choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.textContent = choice.text;
+                button.onclick = () => makeChoice(choice);
+                choicesContainer.appendChild(button);
+            });
+        }
+ 
+        // 处理玩家选择
+        function makeChoice(choice) {
+            // 应用效果（如生命值/金币变化）
+            if (choice.effect) {
+                if (choice.effect.hp) gameState.hp += choice.effect.hp;
+                if (choice.effect.gold) gameState.gold += choice.effect.gold;
+            }
+            
+            // 特殊场景处理
+            if (choice.next === 'restart') {
+                gameState.hp = 100;
+                gameState.gold = 0;
+                gameState.currentScene = 'start';
+            } else {
+                gameState.currentScene = choice.next;
+            }
+            
+            // 检查游戏结束条件 
+            if (gameState.hp <= 0) {
+                gameState.currentScene = 'endLose';
+                gameState.hp = 0;
+            }
+            
+            // 胜利条件示例 
+            if (gameState.gold >= 50) {
+                gameState.currentScene = 'endWin';
+            }
+            
+            updateGame();
+        }
+ 
+        // 初始化游戏
+        window.onload = function() {
+            updateGame();
+            
+            // 添加音效（可选）
+            /*
+            const audio = new Audio('background.mp3');
+            audio.loop = true;
+            audio.volume = 0.3;
+            audio.play().catch(e => console.log("自动播放被阻止，请手动点击"));
+            */
+        };
+    </script>
+</body>
+</html>
